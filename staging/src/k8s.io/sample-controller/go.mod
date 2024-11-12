@@ -8,7 +8,7 @@ require (
     golang.org/x/time v0.7.0
     k8s.io/api v0.0.0
     k8s.io/apimachinery v0.16.13 // Updated version
-    k8s.io/client-go v0.0.0
+    k8s.io/client-go v0.17.16
     k8s.io/code-generator v0.0.0
     k8s.io/klog/v2 v2.130.1
 )
