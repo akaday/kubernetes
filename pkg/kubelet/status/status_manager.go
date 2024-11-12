@@ -179,6 +179,7 @@ func NewManager(kubeClient clientset.Interface, podManager PodManager, podDeleti
 		podDeletionSafety:       podDeletionSafety,
 		podStartupLatencyHelper: podStartupLatencyHelper,
 		stateFileDirectory:      stateFileDirectory,
+		state:                   state.NewNoopStateCheckpoint(),
 	}
 }
 
@@ -202,9 +203,6 @@ func isPodStatusByKubeletEqual(oldStatus, status *v1.PodStatus) bool {
 }
 
 func (m *manager) Start() {
-	// Initialize m.state to no-op state checkpoint manager
-	m.state = state.NewNoopStateCheckpoint()
-
 	// Create pod allocation checkpoint manager even if client is nil so as to allow local get/set of AllocatedResources & Resize
 	if utilfeature.DefaultFeatureGate.Enabled(features.InPlacePodVerticalScaling) {
 		stateImpl, err := state.NewStateCheckpoint(m.stateFileDirectory, podStatusManagerStateFile)
@@ -552,7 +550,7 @@ func hasPodInitialized(pod *v1.Pod) bool {
 		}
 
 		containerStatus := pod.Status.InitContainerStatuses[l-1]
-		if kubetypes.IsRestartableInitContainer(&container) {
+		if podutil.IsRestartableInitContainer(&container) {
 			if containerStatus.State.Running != nil &&
 				containerStatus.Started != nil && *containerStatus.Started {
 				return true
@@ -616,7 +614,7 @@ func checkContainerStateTransition(oldStatuses, newStatuses *v1.PodStatus, podSp
 			return fmt.Errorf("found mismatch between pod spec and status, container: %v", oldStatus.Name)
 		}
 		// Skip any restartable init container as it always is allowed to restart
-		if kubetypes.IsRestartableInitContainer(&initContainer) {
+		if podutil.IsRestartableInitContainer(&initContainer) {
 			continue
 		}
 		// Skip any container that wasn't terminated
